@@ -25,31 +25,37 @@ class VideoModel(db.Model):
 	date = db.Column(db.Integer, nullable=False)
 	location = db.Column(db.String(100), nullable=False)
 	capacity = db.Column(db.Integer, nullable=False)
+	currentCapacity = db.Column(db.Integer, nullable=False)
 
 	def __repr__(self):
-		return f"Video(name = {self.name}, date = {self.date}, location = {self.location}, capacity = {self.capacity})"
+		return f"Video(name = {self.name}, date = {self.date}, location = {self.location}, capacity = {self.capacity}, currentCapacity = {self.currentCapacity})"
 
+db.create_all()
 
 video_put_args = reqparse.RequestParser()
 video_put_args.add_argument("name", type=str, help="Name of the video is required", required=True)
 video_put_args.add_argument("date", type=int, help="Date of the event is required", required=True)
 video_put_args.add_argument("location", type=str, help="Location of the event is required", required=True)
 video_put_args.add_argument("capacity", type=int, help="Capacity of the event is required", required=True)
+video_put_args.add_argument("currentCapacity", type=int, help="Current capacity of the event is required", required=True)
 
 video_update_args = reqparse.RequestParser()
 video_update_args.add_argument("name", type=str, help="Name of the event is required")
 video_update_args.add_argument("date", type=int, help="Date of the event")
 video_update_args.add_argument("location", type=str, help="Location of the event is required")
 video_update_args.add_argument("capacity", type=int, help="Capacity of the event is required")
+video_update_args.add_argument("currentCapacity", type=int, help="Current capacity of the event is required")
 
 resource_fields = {
 	'id': fields.Integer,
 	'name': fields.String,
 	'date': fields.Integer,
 	'location': fields.String,
-	'capacity': fields.Integer
+	'capacity': fields.Integer,
+	'currentCapacity': fields.Integer
 
 }
+
 
 
 
@@ -71,7 +77,7 @@ class Video(Resource):
 		if result:
 			abort(409, message="Event id taken...")
 
-		video = VideoModel(id=video_id, name=args['name'], date=args['date'], location=args['location'], capacity=args['capacity'])
+		video = VideoModel(id=video_id, name=args['name'], date=args['date'], location=args['location'], capacity=args['capacity'], currentCapacity=args['currentCapacity'])
 		db.session.add(video)
 		db.session.commit()
 		return video, 201
@@ -92,6 +98,10 @@ class Video(Resource):
 			result.location = args['location']
 		if args['capacity']:
 			result.capacity = args['capacity']
+		if args['currentCapacity']:
+			if args['currentCapacity'] > result.capacity:
+				abort(409, message="Event is full...")
+			result.currentCapacity = args['currentCapacity']
 
 		db.session.commit()
 
